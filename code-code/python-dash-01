@@ -1,0 +1,48 @@
+from dash import Dash
+import dash_html_components as html
+from dash import dcc
+from dash.dependencies import Input, Output, State
+
+import MetaTrader5 as mt5
+import pandas as pd
+import plotly.express as px
+
+mt5.initialize()
+
+
+
+app = Dash(__name__)
+
+app.layout = html.Div([
+    html.H1('TraderPy - Dash App Example'),
+    html.Div(id='prices'),
+    dcc.Interval(
+        id='interval1',
+        interval=1*500,     # in milliseconds
+        n_intervals = 0
+    )
+])
+
+@app.callback(
+    Output('prices', 'children'),
+    Input('interval1', 'n_intervals')
+)
+
+def update_chart(interval):
+    bars = mt5.copy_rates_from_pos("EURUSD", mt5.TIMEFRAME_M1, 0, 200)
+    bars_df = pd.DataFrame(bars)
+    bars_df['time'] = pd.to_datetime(bars_df['time'], unit='s')
+    print(bars_df)
+    fig = px.line(bars_df, x='time', y='close')
+    return [dcc.Graph(figure=fig)]
+
+# @app.callback(
+#     Input('buy', 'n_clicks'),
+#     State('volume', 'value')
+# )
+
+def buy(click, volume):
+    volume = float(volume)
+
+if __name__ == '__main__':
+    app.run_server()
